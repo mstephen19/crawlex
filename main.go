@@ -2,59 +2,23 @@ package main
 
 import (
 	"fmt"
-	"net/url"
-	"strings"
 
 	"github.com/mstephen19/crawlex/core"
 )
 
 func main() {
-	opts := &core.RequestOptions{
-		Url: "http://crawlee.dev/",
-	}
+	router := core.NewRouter()
 
-	config := &core.CrawlerConfig{
-		MaxConcurrency: 50,
-		Handler: func(ctx *core.HandlerContext, err error) {
-			if err != nil {
-				fmt.Println(err.Error())
-				return
-			}
+	router.AddDefaultHandler(func(ctx *core.HandlerContext, err error) {
+		fmt.Println("Unknown route reached")
+	})
 
-			doc, err := ctx.ParseHTML()
-			if err != nil {
-				fmt.Println(err.Error())
-				return
-			}
+	crawler := core.NewCrawler(&core.CrawlerConfig{
+		MaxConcurrency: 100,
+		Handler:        router.Handler(),
+	})
 
-			fmt.Println(ctx.Options.Url)
-
-			hrefs := doc.Find("a[href]")
-
-			for _, node := range hrefs.Nodes {
-				href := func() (result string) {
-					for _, attr := range node.Attr {
-						if attr.Key == "href" {
-							result = attr.Val
-							return
-						}
-					}
-					return
-				}()
-
-				if strings.HasPrefix(href, "http") {
-					continue
-				}
-
-				joined, _ := url.JoinPath(ctx.Options.Url, href)
-				ctx.Enqueue(&core.RequestOptions{
-					Url: joined,
-				})
-			}
-		},
-	}
-
-	crawler := core.NewCrawler(config)
-
-	crawler.Run(opts, opts, opts)
+	crawler.Run(&core.RequestOptions{
+		Url: "http://www.typescriptlang.org/",
+	})
 }

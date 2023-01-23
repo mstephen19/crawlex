@@ -20,6 +20,7 @@ type Crawler struct {
 	maxed          chan struct{}
 	lock           *sync.Mutex
 	running        bool
+	group          *sync.WaitGroup
 }
 
 func NewCrawler(config *CrawlerConfig) *Crawler {
@@ -33,6 +34,7 @@ func NewCrawler(config *CrawlerConfig) *Crawler {
 		MaxConcurrency: config.MaxConcurrency,
 		maxed:          make(chan struct{}),
 		lock:           &sync.Mutex{},
+		group:          &sync.WaitGroup{},
 	}
 }
 
@@ -82,12 +84,11 @@ func (crawler *Crawler) Run(requests ...*RequestOptions) {
 	}
 
 	crawler.running = true
-	group := sync.WaitGroup{}
 
-	group.Add(1)
+	crawler.group.Add(1)
 
 	go func() {
-		defer group.Done()
+		defer crawler.group.Done()
 
 		for {
 			// If the max concurrency has already been reached, block
@@ -97,10 +98,8 @@ func (crawler *Crawler) Run(requests ...*RequestOptions) {
 			}
 
 			crawler.incr()
-			group.Add(1)
 			opts, ok := crawler.manager.Shift()
 			if !ok {
-				group.Done()
 				crawler.decr()
 				if crawler.activeCount() == 0 {
 					return
@@ -108,9 +107,10 @@ func (crawler *Crawler) Run(requests ...*RequestOptions) {
 				continue
 			}
 
+			crawler.group.Add(1)
 			go func() {
 				defer func() {
-					group.Done()
+					crawler.group.Done()
 					crawler.decr()
 				}()
 
@@ -120,7 +120,7 @@ func (crawler *Crawler) Run(requests ...*RequestOptions) {
 				crawler.handler(&HandlerContext{
 					Options:  opts,
 					Response: response,
-					Crawler:  crawler,
+					crawler:  crawler,
 				}, err)
 			}()
 		}
@@ -131,6 +131,6 @@ func (crawler *Crawler) Run(requests ...*RequestOptions) {
 		log.Fatal(err)
 	}
 
-	group.Wait()
+	crawler.group.Wait()
 	crawler.running = false
 }

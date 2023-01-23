@@ -11,11 +11,15 @@ import (
 type HandlerContext struct {
 	Options  *RequestOptions
 	Response *http.Response
-	Crawler  *Crawler
+	crawler  *Crawler
+}
+
+func (ctx *HandlerContext) Retry() error {
+	return ctx.crawler.Enqueue(ctx.Options)
 }
 
 func (ctx *HandlerContext) Enqueue(requests ...*RequestOptions) error {
-	return ctx.Crawler.Enqueue(requests...)
+	return ctx.crawler.Enqueue(requests...)
 }
 
 func (ctx *HandlerContext) ParseHTML() (doc *goquery.Document, err error) {
