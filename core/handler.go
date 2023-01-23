@@ -12,6 +12,23 @@ type HandlerContext struct {
 	Options  *RequestOptions
 	Response *http.Response
 	crawler  *Crawler
+	proxy    *Proxy
+}
+
+func (ctx *HandlerContext) Proxy() string {
+	if ctx.proxy == nil {
+		return ""
+	}
+
+	return ctx.proxy.raw
+}
+
+func (ctx *HandlerContext) MarkProxyBad() {
+	ctx.crawler.proxyPool.MarkBad(ctx.proxy)
+}
+
+func (ctx *HandlerContext) MarkProxyGood() {
+	ctx.crawler.proxyPool.MarkGood(ctx.proxy)
 }
 
 func (ctx *HandlerContext) Retry() error {

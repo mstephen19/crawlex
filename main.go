@@ -10,15 +10,18 @@ func main() {
 	router := core.NewRouter()
 
 	router.AddDefaultHandler(func(ctx *core.HandlerContext, err error) {
-		fmt.Println("Unknown route reached")
+		fmt.Println(ctx.Options.Url, ctx.Proxy())
+		ctx.MarkProxyBad()
+		ctx.Retry()
 	})
 
 	crawler := core.NewCrawler(&core.CrawlerConfig{
-		MaxConcurrency: 100,
-		Handler:        router.Handler(),
+		Handler:               router.Handler(),
+		Proxies:               []string{"http://125.141.139.198:5566"},
+		RequestTimeoutSeconds: 2,
 	})
 
 	crawler.Run(&core.RequestOptions{
-		Url: "http://www.typescriptlang.org/",
+		Url: "http://typescriptlang.org/",
 	})
 }

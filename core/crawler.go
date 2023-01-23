@@ -2,14 +2,21 @@ package core
 
 import (
 	"log"
+	"net/http"
 	"sync"
+	"time"
 )
 
 const DefaultMaxConcurrency int = 50
+const DefaultMaxProxyRating int = 5
+const DefaultRequestTimeoutSeconds int = 60
 
 type CrawlerConfig struct {
-	MaxConcurrency int
-	Handler        HandlerFunc
+	MaxConcurrency        int
+	Handler               HandlerFunc
+	Proxies               []string
+	MaxProxyRating        int
+	RequestTimeoutSeconds int
 }
 
 type Crawler struct {
@@ -21,20 +28,46 @@ type Crawler struct {
 	lock           *sync.Mutex
 	running        bool
 	group          *sync.WaitGroup
+	proxyPool      *ProxyPool
+	timeout        int
+	defaultClient  *http.Client
 }
 
 func NewCrawler(config *CrawlerConfig) *Crawler {
-	if config.MaxConcurrency == 0 {
+	if config.MaxConcurrency <= 0 {
 		config.MaxConcurrency = DefaultMaxConcurrency
+	}
+
+	if config.MaxProxyRating <= 0 {
+		config.MaxProxyRating = DefaultMaxProxyRating
+	}
+
+	if config.RequestTimeoutSeconds <= 0 {
+		config.RequestTimeoutSeconds = DefaultRequestTimeoutSeconds
+	}
+
+	proxies := make([]*Proxy, len(config.Proxies))
+	for i, raw := range config.Proxies {
+		proxy, err := NewProxy(raw, time.Second*time.Duration(config.RequestTimeoutSeconds))
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		proxies[i] = proxy
 	}
 
 	return &Crawler{
 		manager:        NewRequestManager(),
 		handler:        config.Handler,
 		MaxConcurrency: config.MaxConcurrency,
+		timeout:        config.RequestTimeoutSeconds,
 		maxed:          make(chan struct{}),
 		lock:           &sync.Mutex{},
 		group:          &sync.WaitGroup{},
+		proxyPool:      NewProxyPool(config.MaxProxyRating, proxies...),
+		defaultClient: &http.Client{
+			Timeout: time.Second * time.Duration(config.RequestTimeoutSeconds),
+		},
 	}
 }
 
@@ -114,13 +147,31 @@ func (crawler *Crawler) Run(requests ...*RequestOptions) {
 					crawler.decr()
 				}()
 
-				response, err := MakeRequest(opts)
-				defer response.Body.Close()
+				var response *http.Response
+				var err error
+				var proxy *Proxy
+
+				if !opts.SkipRequest {
+					client := crawler.defaultClient
+					proxy = crawler.proxyPool.RandomProxy()
+					if proxy != nil {
+						client = proxy.httpClient
+					}
+					response, err = MakeRequest(opts, client)
+					defer func() {
+						if response == nil || response.Body == nil {
+							return
+						}
+
+						response.Body.Close()
+					}()
+				}
 
 				crawler.handler(&HandlerContext{
 					Options:  opts,
 					Response: response,
 					crawler:  crawler,
+					proxy:    proxy,
 				}, err)
 			}()
 		}

@@ -5,7 +5,7 @@ import (
 	"net/http"
 )
 
-func MakeRequest(opts *RequestOptions) (response *http.Response, err error) {
+func MakeRequest(opts *RequestOptions, client *http.Client) (response *http.Response, err error) {
 	request, err := http.NewRequest(opts.Method, opts.Url, bytes.NewReader(opts.Body))
 	for key, value := range opts.Headers {
 		request.Header.Add(key, value)
@@ -15,6 +15,6 @@ func MakeRequest(opts *RequestOptions) (response *http.Response, err error) {
 		return
 	}
 
-	response, err = http.DefaultClient.Do(request)
+	response, err = client.Do(request)
 	return
 }

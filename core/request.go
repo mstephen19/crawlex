@@ -6,11 +6,12 @@ import (
 )
 
 type RequestOptions struct {
-	Url     string
-	Method  string
-	Body    []byte
-	Headers map[string]string
-	Label   any
+	Url         string
+	Method      string
+	Body        []byte
+	Headers     map[string]string
+	Label       any
+	SkipRequest bool
 }
 
 func CleanRequestOptions(opts *RequestOptions) (err error) {
