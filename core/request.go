@@ -12,6 +12,17 @@ type RequestOptions struct {
 	Headers     map[string]string
 	Label       any
 	SkipRequest bool
+	userData    map[any]any
+}
+
+func (options *RequestOptions) Set(key any, value any) {
+	options.userData[key] = value
+}
+
+func (options *RequestOptions) Get(key any) (value any, exists bool) {
+	value, exists = options.userData[key]
+
+	return
 }
 
 func CleanRequestOptions(opts *RequestOptions) (err error) {
