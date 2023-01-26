@@ -18,11 +18,8 @@ requests := []*core.RequestOptions{{
 To handle requests, you can either create your own `HandlerFunc`, or create a router that handles different paths via labelled requests.
 
 ```go
-router := core.NewRouter()
-
-router.AddDefaultHandler(func(ctx *core.HandlerContext, err error) {
-    fmt.Println(ctx.Response.Status)
-})
+// pass in "true" to run multiple handlers for one request in parallel.
+router := core.NewRouter(false)
 
 router.AddHandler("google", func(ctx *core.HandlerContext, err error) {
     fmt.Println("Requested Google.")
@@ -59,10 +56,6 @@ func main() {
  }}
 
  router := core.NewRouter()
-
- router.AddDefaultHandler(func(ctx *core.HandlerContext, err error) {
-  fmt.Println(ctx.Response.Status)
- })
 
  router.AddHandler("google", func(ctx *core.HandlerContext, err error) {
   fmt.Println("Requested Google.")

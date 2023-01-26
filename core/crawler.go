@@ -7,9 +7,11 @@ import (
 	"time"
 )
 
-const DefaultMaxConcurrency int = 50
-const DefaultMaxProxyRating int = 5
-const DefaultRequestTimeoutSeconds int = 60
+const (
+	DefaultMaxConcurrency        int = 50
+	DefaultMaxProxyRating        int = 5
+	DefaultRequestTimeoutSeconds int = 60
+)
 
 type CrawlerConfig struct {
 	MaxConcurrency        int

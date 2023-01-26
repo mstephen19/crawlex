@@ -10,18 +10,16 @@ func main() {
 	requests := []*core.RequestOptions{{
 		Url:   "http://google.com",
 		Label: "google",
-	}, {
-		Url: "http://yahoo.com",
 	}}
 
-	router := core.NewRouter()
+	router := core.NewRouter(false)
 
-	router.AddDefaultHandler(func(ctx *core.HandlerContext, err error) {
-		fmt.Println(ctx.Response.Status)
+	router.AddHandler("google", func(ctx *core.HandlerContext, err error) {
+		fmt.Println("First handler.")
 	})
 
 	router.AddHandler("google", func(ctx *core.HandlerContext, err error) {
-		fmt.Println("Requested Google.")
+		fmt.Println("Second handler.")
 	})
 
 	crawler := core.NewCrawler(&core.CrawlerConfig{
