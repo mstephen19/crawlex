@@ -19,6 +19,7 @@ type CrawlerConfig struct {
 	Proxies               []string
 	MaxProxyRating        int
 	RequestTimeoutSeconds int
+	Store                 Store[any]
 }
 
 type Crawler struct {
@@ -33,6 +34,7 @@ type Crawler struct {
 	proxyPool      *ProxyPool
 	timeout        int
 	defaultClient  *http.Client
+	store          Store[any]
 }
 
 func NewCrawler(config *CrawlerConfig) *Crawler {
@@ -46,6 +48,14 @@ func NewCrawler(config *CrawlerConfig) *Crawler {
 
 	if config.RequestTimeoutSeconds <= 0 {
 		config.RequestTimeoutSeconds = DefaultRequestTimeoutSeconds
+	}
+
+	if config.Store == nil {
+		config.Store = NewBasicStore[any](10)
+	}
+
+	if config.Handler == nil {
+		config.Handler = DefaultDefaultHandler
 	}
 
 	proxies := make([]*Proxy, len(config.Proxies))
@@ -70,6 +80,7 @@ func NewCrawler(config *CrawlerConfig) *Crawler {
 		defaultClient: &http.Client{
 			Timeout: time.Second * time.Duration(config.RequestTimeoutSeconds),
 		},
+		store: config.Store,
 	}
 }
 
@@ -185,5 +196,6 @@ func (crawler *Crawler) Run(requests ...*RequestOptions) {
 	}
 
 	crawler.group.Wait()
+	crawler.store.Stop()
 	crawler.running = false
 }

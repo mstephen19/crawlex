@@ -23,6 +23,10 @@ func (ctx *HandlerContext) Proxy() string {
 	return ctx.proxy.raw
 }
 
+func (ctx *HandlerContext) Push(data ...any) {
+	ctx.crawler.store.Push(data...)
+}
+
 func (ctx *HandlerContext) MarkProxyBad() {
 	ctx.crawler.proxyPool.MarkBad(ctx.proxy)
 }

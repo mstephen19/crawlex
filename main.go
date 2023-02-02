@@ -1,30 +1,26 @@
 package main
 
 import (
-	"fmt"
+	"io"
 
 	"github.com/mstephen19/crawlex/core"
 )
 
 func main() {
-	requests := []*core.RequestOptions{{
-		Url:   "http://google.com",
-		Label: "google",
-	}}
-
 	router := core.NewRouter(false)
 
 	router.AddHandler("google", func(ctx *core.HandlerContext, err error) {
-		fmt.Println("First handler.")
-	})
-
-	router.AddHandler("google", func(ctx *core.HandlerContext, err error) {
-		fmt.Println("Second handler.")
+		b, _ := io.ReadAll(ctx.Response.Body)
+		ctx.Push(string(b))
+		ctx.Retry()
 	})
 
 	crawler := core.NewCrawler(&core.CrawlerConfig{
 		Handler: router.Handler(),
 	})
 
-	crawler.Run(requests...)
+	crawler.Run(&core.RequestOptions{
+		Url:   "http://google.com",
+		Label: "google",
+	})
 }
