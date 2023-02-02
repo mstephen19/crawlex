@@ -2,6 +2,8 @@
 
 This is a passion project inspired by the [**Crawlee** TypeScript library](https://crawlee.dev/). It will potentially be published in the future, but right now it is just a proof-of-concept.
 
+> Warning, this is not stable and is by no means ready for production.
+
 ## Usage
 
 Requests are interpreted by Crawlex via `RequestOptions`.
